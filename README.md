@@ -1,6 +1,12 @@
 # JamesIves/github-pages-deploy-action
 
-Hardened GitHub Action by [Chainguard](https://www.chainguard.dev).
+Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/JamesIves/github-pages-deploy-action](https://github.com/JamesIves/github-pages-deploy-action).
+
+## Versions
+
+| Version | Tag | Upstream commit |
+|---------|-----|-----------------|
+| v4.8.0 | [`v4.8.0`](https://github.com/chainguard-actions/github-pages-deploy-action/tree/v4.8.0) | — |
 
 ## Privacy
 
