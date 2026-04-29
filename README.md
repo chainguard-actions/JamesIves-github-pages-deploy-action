@@ -1,5 +1,7 @@
 # JamesIves/github-pages-deploy-action
 
+🚀 Automatically deploy your project to GitHub Pages using GitHub Actions. This action can be configured to push your production-ready code into any branch you'd like.
+
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/JamesIves/github-pages-deploy-action](https://github.com/JamesIves/github-pages-deploy-action).
 
 ## Versions

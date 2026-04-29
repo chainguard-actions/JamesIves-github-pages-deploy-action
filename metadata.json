@@ -1,5 +1,6 @@
 {
   "owner": "JamesIves",
   "name": "github-pages-deploy-action",
-  "visibility": ""
+  "visibility": "internal",
+  "description": "🚀 Automatically deploy your project to GitHub Pages using GitHub Actions. This action can be configured to push your production-ready code into any branch you'd like."
 }
