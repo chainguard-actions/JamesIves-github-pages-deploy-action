@@ -1,4 +1,6 @@
 {
-  "upstream": "JamesIves/github-pages-deploy-action",
-  "version": "v4.8.0"
+  "owner": "JamesIves",
+  "repo": "github-pages-deploy-action",
+  "version": "",
+  "url": "https://github.com/JamesIves/github-pages-deploy-action"
 }
