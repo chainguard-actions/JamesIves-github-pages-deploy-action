@@ -1,0 +1,46 @@
+name: Test basic deployment attempt
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: fake-token-for-testing
+      GITHUB_REPOSITORY: test-owner/test-repo
+      GITHUB_ACTOR: test-actor
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a simple build folder to deploy
+        run: |
+          mkdir -p build
+          echo "<h1>Hello World</h1>" > build/index.html
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          GITHUB_TOKEN: fake-token-for-testing
+          BRANCH: gh-pages
+          FOLDER: build
+
+      - name: Assert DEPLOYMENT_STATUS is set and is a known value
+        run: |
+          echo "DEPLOYMENT_STATUS: $DEPLOYMENT_STATUS"
+          if [ "$DEPLOYMENT_STATUS" = "success" ] || [ "$DEPLOYMENT_STATUS" = "failed" ] || [ "$DEPLOYMENT_STATUS" = "skipped" ]; then
+            echo "PASS: DEPLOYMENT_STATUS is a valid value: $DEPLOYMENT_STATUS"
+          else
+            echo "FAIL: DEPLOYMENT_STATUS has unexpected value: '$DEPLOYMENT_STATUS'"
+            exit 1
+          fi
+
+      - name: Assert DEPLOYMENT_STATUS is failed (cannot push in act environment)
+        run: |
+          echo "DEPLOYMENT_STATUS: $DEPLOYMENT_STATUS"
+          if [ "$DEPLOYMENT_STATUS" = "failed" ]; then
+            echo "PASS: deployment correctly reported as failed (no real GitHub push possible in act)"
+          else
+            echo "FAIL: expected 'failed' but got '$DEPLOYMENT_STATUS'"
+            exit 1
+          fi

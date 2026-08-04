@@ -1,0 +1,48 @@
+name: Test deployment with custom commit message
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY: test-owner/test-repo
+      GITHUB_ACTOR: test-actor
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a simple build folder
+        run: |
+          mkdir -p dist
+          echo "<h1>Custom Deploy</h1>" > dist/index.html
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          GITHUB_TOKEN: fake-token-for-testing
+          BRANCH: gh-pages
+          FOLDER: dist
+          COMMIT_MESSAGE: "chore: deploy site [skip ci]"
+          GIT_CONFIG_NAME: "Test Bot"
+          GIT_CONFIG_EMAIL: "testbot@example.com"
+
+      - name: Assert DEPLOYMENT_STATUS is set to a known value
+        run: |
+          echo "DEPLOYMENT_STATUS: $DEPLOYMENT_STATUS"
+          if [ "$DEPLOYMENT_STATUS" = "success" ] || [ "$DEPLOYMENT_STATUS" = "failed" ] || [ "$DEPLOYMENT_STATUS" = "skipped" ]; then
+            echo "PASS: DEPLOYMENT_STATUS is a valid value: $DEPLOYMENT_STATUS"
+          else
+            echo "FAIL: DEPLOYMENT_STATUS has unexpected value: '$DEPLOYMENT_STATUS'"
+            exit 1
+          fi
+
+      - name: Assert DEPLOYMENT_STATUS is failed (cannot push in act environment)
+        run: |
+          echo "DEPLOYMENT_STATUS: $DEPLOYMENT_STATUS"
+          if [ "$DEPLOYMENT_STATUS" = "failed" ]; then
+            echo "PASS: deployment correctly reported as failed (no real GitHub push possible in act)"
+          else
+            echo "FAIL: expected 'failed' but got '$DEPLOYMENT_STATUS'"
+            exit 1
+          fi

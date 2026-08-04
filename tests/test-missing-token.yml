@@ -1,0 +1,35 @@
+name: Test deployment fails without auth token
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REPOSITORY: test-owner/test-repo
+      GITHUB_ACTOR: test-actor
+      GITHUB_SHA: abc1234567890abcdef1234567890abcdef12345
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a simple build folder
+        run: |
+          mkdir -p build
+          echo "<h1>Hello</h1>" > build/index.html
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          BRANCH: gh-pages
+          FOLDER: build
+          # No GITHUB_TOKEN, ACCESS_TOKEN, or SSH provided
+
+      - name: Assert DEPLOYMENT_STATUS is failed due to missing token
+        run: |
+          echo "DEPLOYMENT_STATUS: $DEPLOYMENT_STATUS"
+          if [ "$DEPLOYMENT_STATUS" = "failed" ]; then
+            echo "PASS: deployment correctly failed when no auth token was provided"
+          else
+            echo "FAIL: expected 'failed' but got '$DEPLOYMENT_STATUS'"
+            exit 1
+          fi

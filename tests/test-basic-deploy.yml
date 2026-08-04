@@ -1,0 +1,45 @@
+name: Test Basic Deploy
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.email "act-test@example.com"
+          git config user.name "Act Test Bot"
+
+      - name: Create deploy folder with content
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/deploy-output"
+          echo "<html><body><h1>Test Deploy</h1></body></html>" > "$GITHUB_WORKSPACE/deploy-output/index.html"
+          echo "Test deployment content $(date +%s)" > "$GITHUB_WORKSPACE/deploy-output/README.md"
+
+      - id: deploy
+        uses: .
+        continue-on-error: true
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages-act-test
+          FOLDER: deploy-output
+          COMMIT_MESSAGE: "Test deploy from act workflow"
+          CLEAN: "true"
+          GIT_CONFIG_NAME: "Act Test Bot"
+          GIT_CONFIG_EMAIL: "act-test@example.com"
+
+      - name: Assert deployment status is set to a valid value
+        env:
+          ACTUAL: ${{ env.DEPLOYMENT_STATUS }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" = "success" ] || [ "$ACTUAL" = "skipped" ] || [ "$ACTUAL" = "failed" ]; then
+            echo "PASS: deployment status is '$ACTUAL'"
+          else
+            echo "FAIL: expected 'success', 'skipped', or 'failed' but got '$ACTUAL'"
+            exit 1
+          fi
