@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
+| 3.6.2 | [`3.6.2`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/3.6.2) | [`e80c869`](https://github.com/JamesIves/github-pages-deploy-action/commit/e80c869f0057899fc2cd28819b5bbe9de890524a) |
 | v4.8.0 | [`v4.8.0`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/v4.8.0) | — |
 
 ## Privacy
