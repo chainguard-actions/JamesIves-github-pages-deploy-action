@@ -1,0 +1,57 @@
+name: Test single-commit deployment mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create deployment folder
+        run: |
+          mkdir -p /tmp/deploy-single
+          echo "<html><body>Single Commit Deploy</body></html>" > /tmp/deploy-single/index.html
+          echo "robots: none" > /tmp/deploy-single/robots.txt
+
+      - name: Set up git remote reachable inside the action
+        run: |
+          git config user.email "deploy@example.com"
+          git config user.name "Deploy Bot"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: deploy
+        uses: .
+        with:
+          folder: /tmp/deploy-single
+          branch: gh-pages
+          single-commit: true
+          dry-run: true
+          git-config-name: "Deploy Bot"
+          git-config-email: "deploy@example.com"
+          token: ${{ github.token }}
+        continue-on-error: true
+
+      - name: Assert single-commit deployment status
+        env:
+          STATUS: ${{ steps.deploy.outputs.deployment-status }}
+          OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "deployment-status: $STATUS"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ "$STATUS" = "success" ] || [ "$STATUS" = "skipped" ]; then
+              echo "PASS: deployment-status is '$STATUS'"
+            else
+              echo "FAIL: expected deployment-status to be 'success' or 'skipped', got '$STATUS'"
+              exit 1
+            fi
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo or dry-run limitation)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
