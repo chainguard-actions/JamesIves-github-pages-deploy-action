@@ -1,0 +1,372 @@
+name: Integration Tests 🧪
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: 30 15 * * 0-6
+
+permissions:
+  contents: write
+
+jobs:
+  integration-cross-repo-push:
+    container: node:24
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Container Dependencies 📚
+        run: |
+          apt-get update && apt-get install -y rsync
+
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+          repository-name: MontezumaIves/lab
+          token: ${{ secrets.ACCESS_TOKEN }}
+          commit-message: 'Test commit'
+          folder: integration
+          single-commit: true
+          clean: true
+          silent: false
+
+  integration-checkout-v1:
+    needs: integration-cross-repo-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          folder: integration
+          target-folder: cat/montezuma
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+          silent: false
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages
+
+  integration-checkout-v2:
+    needs: integration-checkout-v1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          folder: integration
+          target-folder: cat/montezuma2
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages
+
+  # Deploys using a container that requires you to install rsync.
+  integration-container:
+    needs: integration-checkout-v2
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:3.3
+      env:
+        LANG: C.UTF-8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install rsync
+        run: |
+          apt-get update && apt-get install -y rsync
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          folder: integration
+          target-folder: cat/montezuma2
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages
+
+  # Deploys using an SSH key.
+  integration-ssh:
+    needs: integration-container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          folder: integration
+          target-folder: cat/montezuma3
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages
+
+  # Deploys using an SSH key.
+  integration-ssh-third-party-client:
+    needs: integration-ssh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install SSH Client
+        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd # v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          ssh-key: true
+          folder: integration
+          target-folder: cat/montezuma4
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploys using a custom env. (Includes subsequent commit)
+  integration-env:
+    needs: integration-ssh-third-party-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version-file: '.node-version'
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          folder: integration
+          target-folder: cat/montezuma4
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          folder: integration
+          target-folder: cat/subsequent
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages
+
+  # Deploys using the CLEAN option.
+  integration-clean:
+    needs:
+      [
+        integration-checkout-v1,
+        integration-checkout-v2,
+        integration-container,
+        integration-ssh,
+        integration-ssh-third-party-client,
+        integration-env
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          folder: integration
+          clean: true
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+  # Deploys to a branch that doesn't exist with SINGLE_COMMIT. (Includes subsequent commit)
+  integration-branch-creation:
+    needs: integration-clean
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          branch: integration-test-delete-prod
+          folder: integration
+          single-commit: true
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          branch: integration-test-delete-prod
+          folder: integration
+          single-commit: true
+          target-folder: jives
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: integration-test-delete-prod
+
+  # Creates two competing deployments, one of which should rebase over the other.
+  # First conflicting deployment
+  integration-rebase-conflicts-1:
+    needs: integration-branch-creation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create random file
+        run: echo $RANDOM > integration/1
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+          repository-name: MontezumaIves/lab
+          token: ${{ secrets.ACCESS_TOKEN }}
+          branch: gh-pages-rebase-conflict
+          folder: integration
+          force: false
+
+  # Second conflicting deployment
+  integration-rebase-conflicts-2:
+    needs: integration-rebase-conflicts-1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create random file
+        run: echo $RANDOM > integration/2
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+          repository-name: MontezumaIves/lab
+          token: ${{ secrets.ACCESS_TOKEN }}
+          branch: gh-pages-rebase-conflict
+          folder: integration
+          force: false
+
+  # Clean up conflicting deployments
+  integration-rebase-conflicts-cleanup:
+    needs: [integration-rebase-conflicts-1, integration-rebase-conflicts-2]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.ACCESS_TOKEN }}
+          owner: MontezumaIves
+          repository: lab
+          branches: gh-pages
+
+  integration-root-folder:
+    needs: integration-rebase-conflicts-cleanup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Echo
+        working-directory: integration
+        run: |
+          echo "Here"
+
+      - name: Build and Deploy
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          folder: .
+          target-folder: cat/montezuma5
+          silent: false
+          git-config-name: Montezuma
+          git-config-email: montezuma@jamesiv.es
+
+      - name: Cleanup Generated Branch
+        uses: dawidd6/action-delete-branch@d1efac9a6f7a9b408d4e8ff663a99c1fbac17b3f # v3.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branches: gh-pages

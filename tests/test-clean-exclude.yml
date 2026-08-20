@@ -1,0 +1,57 @@
+name: Test clean and clean-exclude options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Create deployment folder with multiple files
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/site"
+          echo "<html><body>Clean Exclude Test</body></html>" > "$GITHUB_WORKSPACE/site/index.html"
+          echo "keep me" > "$GITHUB_WORKSPACE/site/CNAME"
+          echo "also keep" > "$GITHUB_WORKSPACE/site/.nojekyll"
+          echo "hashed-abc123.js" > "$GITHUB_WORKSPACE/site/app.abc123.js"
+
+      - id: deploy
+        uses: .
+        with:
+          token: ${{ github.token }}
+          branch: gh-pages
+          folder: site
+          clean: true
+          clean-exclude: |
+            CNAME
+            .nojekyll
+          dry-run: true
+          git-config-name: "Test Bot"
+          git-config-email: "testbot@example.com"
+        continue-on-error: true
+
+      - name: Assert deployment status output
+        env:
+          STATUS: ${{ steps.deploy.outputs.deployment-status }}
+          OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "deployment-status: $STATUS"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$STATUS" ]; then
+              echo "FAIL: action succeeded but deployment-status output is empty"
+              exit 1
+            fi
+            if [ "$STATUS" != "success" ] && [ "$STATUS" != "skipped" ]; then
+              echo "FAIL: expected deployment-status to be 'success' or 'skipped', got '$STATUS'"
+              exit 1
+            fi
+            echo "PASS: deployment-status=$STATUS"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

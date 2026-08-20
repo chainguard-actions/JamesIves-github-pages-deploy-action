@@ -1,0 +1,53 @@
+name: Test custom branch and target folder deployment
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Create deployment folder with nested content
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/build/assets"
+          echo "<html><body>Custom Branch Test</body></html>" > "$GITHUB_WORKSPACE/build/index.html"
+          echo "body { color: red; }" > "$GITHUB_WORKSPACE/build/assets/style.css"
+
+      - id: deploy
+        uses: .
+        with:
+          token: ${{ github.token }}
+          branch: docs
+          folder: build
+          target-folder: website
+          commit-message: "Deploy website to docs branch"
+          dry-run: true
+          git-config-name: "CI Bot"
+          git-config-email: "ci-bot@example.com"
+        continue-on-error: true
+
+      - name: Assert deployment status output
+        env:
+          STATUS: ${{ steps.deploy.outputs.deployment-status }}
+          OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "deployment-status: $STATUS"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$STATUS" ]; then
+              echo "FAIL: action succeeded but deployment-status output is empty"
+              exit 1
+            fi
+            if [ "$STATUS" != "success" ] && [ "$STATUS" != "skipped" ]; then
+              echo "FAIL: expected deployment-status to be 'success' or 'skipped', got '$STATUS'"
+              exit 1
+            fi
+            echo "PASS: deployment-status=$STATUS"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

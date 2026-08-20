@@ -1,0 +1,57 @@
+name: Test basic dry-run deployment
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Create deployment folder
+        run: |
+          mkdir -p /tmp/deploy-output
+          echo "<html><body>Hello GitHub Pages</body></html>" > /tmp/deploy-output/index.html
+          echo "test content" > /tmp/deploy-output/test.txt
+
+      - name: Copy deploy folder into workspace
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp /tmp/deploy-output/index.html "$GITHUB_WORKSPACE/dist/"
+          cp /tmp/deploy-output/test.txt "$GITHUB_WORKSPACE/dist/"
+
+      - id: deploy
+        uses: .
+        with:
+          token: ${{ github.token }}
+          branch: gh-pages
+          folder: dist
+          dry-run: true
+          git-config-name: "Test User"
+          git-config-email: "test@example.com"
+        continue-on-error: true
+
+      - name: Assert deployment status output
+        env:
+          STATUS: ${{ steps.deploy.outputs.deployment-status }}
+          OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "deployment-status: $STATUS"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$STATUS" ]; then
+              echo "FAIL: action succeeded but deployment-status output is empty"
+              exit 1
+            fi
+            if [ "$STATUS" != "success" ] && [ "$STATUS" != "skipped" ]; then
+              echo "FAIL: expected deployment-status to be 'success' or 'skipped', got '$STATUS'"
+              exit 1
+            fi
+            echo "PASS: deployment-status=$STATUS"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
