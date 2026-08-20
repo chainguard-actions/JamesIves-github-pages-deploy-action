@@ -10,7 +10,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 |---------|-----|-----------------|
 | 3.6.2 | [`3.6.2`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/3.6.2) | [`e80c869`](https://github.com/JamesIves/github-pages-deploy-action/commit/e80c869f0057899fc2cd28819b5bbe9de890524a) |
 | v4 | [`v4`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/v4) | [`fa24774`](https://github.com/JamesIves/github-pages-deploy-action/commit/fa24774553152dd7873cd16ebd8d959b010c5445) |
-| v4.8.0 | [`v4.8.0`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/v4.8.0) | — |
+| v4.8.0 | [`v4.8.0`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/v4.8.0) | [`d92aa23`](https://github.com/JamesIves/github-pages-deploy-action/commit/d92aa235d04922e8f08b40ce78cc5442fcfbfa2f) |
 | v4.9.0 | [`v4.9.0`](https://github.com/chainguard-actions/JamesIves-github-pages-deploy-action/tree/v4.9.0) | [`fa24774`](https://github.com/JamesIves/github-pages-deploy-action/commit/fa24774553152dd7873cd16ebd8d959b010c5445) |
 
 ## Privacy
